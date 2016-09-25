@@ -1,131 +1,51 @@
 # -*- coding: utf-8 -*-
 
-"""lyrico
-
-Usage:
-  lyrico [<source_dir>]
-  lyrico (enable | disable) (<lyrico_action>)
-  lyrico set (<dir_type>) (<full_path_to_dir>)
-  lyrico (-h | --help)
-  lyrico --version
-  lyrico --settings
-
-Options:
-  -h --help     Show this screen.
-  --version     Show version.
-  --settings    Show current settings.
-"""
-
-from __future__ import print_function
-from __future__ import unicode_literals
+import os
 
 import platform
 
-from .docopt import docopt
+import argparse
+import configparser
 
-from .song import Song
-from .song_helper import get_song_list
-from .config import Config
+from song import Song
+from song_helper import get_song_list
 
 # testpypi 0.6.0
 __version__ = "0.6.0"
 
+Config = configparser.ConfigParser()
+Config.read(os.path.expanduser('~/.lyricorc'))
+parser = argparse.ArgumentParser()
+parser.add_argument("directory", help="directory where lyrico will search for mp3 files")
+parser.add_argument("--overwrite", help="always download and overwrite existing lyrics")
+args = parser.parse_args()
+
+
+
 
 def main():
+	# User wants to download lyrics.
+	Config.overwrite = args.overwrite
+	song_list = [Song(song_path, Config) for song_path in get_song_list(args.directory,Config)]
+	print(len(song_list), 'songs detected.')
+	print('Metadata extracted for', (str(Song.valid_metadata_count) + '/' + str(len(song_list))), 'songs.')
+	for song in song_list:
+		# Only download lyrics if 'title' and 'artist' is present
+		# Error str is already present in song.error
+		if song.artist and song.title:
+			song.download_lyrics(Config)
 
-	# Fix console for windows users
-	if platform.system() == 'Windows':
-		import win_unicode_console
-		win_unicode_console.enable()
-
-	args = docopt(__doc__, version = ('lyrico ' + __version__))
-
-	# The check_config flag instructs the "Config.load_config" to skip the 'BadConfigError's.
-	# So only when user is running downloads, the config must be valid.
-	# When user is running cmds to update config, it will be always loaded
-	# regardless of values of the settings.
-	check_config = not(args['--settings'] or args['disable'] or args['enable'] or args['set'])
-
-	Config.load_config(check_config)
-	if not Config.is_loaded:
-		# Config not loaded due to exceptions. Error logged by exception handlers.
-		return
-	
-	if args['--settings']:
-		# show current settings
-		Config.show_settings()
-		return
-
-	if args['disable'] or args['enable'] or args['set']:
-		# User is updating config
-
-		if args['set']:
-			# setting 'lyrics_dir' or 'source_dir'
-
-			# This general try catch block is intended for os.makedirs call if
-			# it raises OSError which is not due to directory already existing or
-			# some other error than OSError
-			try:
-				Config.set_dir(args['<dir_type>'], args['<full_path_to_dir>'])
-			except Exception as e:
-				print(e)
-
-		if args['enable'] or args['disable']:
-			# setting 'save_to_file', 'save_to_tag' or 'overwrite'.
-
-			# detect wether user wants to enable or disable a lyrico action
-			update_type = 'enable' if args['enable'] else 'disable'
-			Config.update_lyrico_actions(args['<lyrico_action>'], update_type)
-	else:
-		# User wants to download lyrics.
-
-		if args['<source_dir>']:
-			# if lyrico <source_dir> invocation is used:
-			# update user's "source_dir" in config
-			# update Config class' 'source_dir' class variable
-
-			# This general try catch block is intended for os.makedirs call if
-			# it raises OSError which is not due to directory already existing or
-			# some other error than OSError
-			try:
-				set_dir_success = Config.set_dir('source_dir', args['<source_dir>'])
-			except Exception as e:
-				print(e)
-				# Don't go ahead with excution since user gave bad path or might have
-				# correct system settings?
-				return
-
-			# For this usage if user provides non existing dir, return by using boolean
-			# return value of Config.set_dir
-			if not set_dir_success:
-				return
-
-			# update class variable so that new setting is reflected across modules.
-			Config.source_dir = args['<source_dir>']
-				
-		song_list = [Song(song_path) for song_path in get_song_list(Config.source_dir)]
-		print(len(song_list), 'songs detected.')
-		print('Metadata extracted for', (str(Song.valid_metadata_count) + '/' + str(len(song_list))), 'songs.')
-		for song in song_list:
-			# Only download lyrics if 'title' and 'artist' is present
-			# Error str is already present in song.error
-			if song.artist and song.title:
-				song.download_lyrics()
-
-			# Show immidiate log in console
+		# Show immidiate log in console
+		else:
+			# If title was present, use that
+			if song.title:
+				print(song.title, 'was ignored.', song.error)
+			# else use audio file path
 			else:
-				# If title was present, use that
-				if song.title:
-					print(song.title, 'was ignored.', song.error)
-				# else use audio file path
-				else:
-					print(song.path, 'was ignored.', song.error)
+				print(song.path, 'was ignored.', song.error)
 
 
-		print('\nBuilding log...')
-		Song.log_results(song_list)
-		print('FINISHED')
-		
-		# Disable windows unicode console anyways
-		if platform.system() == 'Windows':
-			win_unicode_console.disable()
+	print('\nBuilding log...')
+	Song.log_results(song_list, Config)
+	print('FINISHED')
+

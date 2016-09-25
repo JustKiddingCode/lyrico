@@ -4,19 +4,15 @@
 	Contains helper functions specific to instantiate Song class.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 import sys
 import os
 import glob2
 import platform
 
-try:
-	from urllib.parse  import quote
-except ImportError:
-	# Python27
-	from urllib import quote
+from urllib.parse  import quote
     
 from mutagen.id3 import ID3
 from mutagen.mp4 import MP4
@@ -26,9 +22,8 @@ from mutagen.oggflac import OggFLAC
 from mutagen.asf import ASF
 from mutagen import MutagenError
 
-from .config import Config
-from .helper import sanitize_data
-from .audio_format_keys import FORMAT_KEYS
+from helper import sanitize_data
+from audio_format_keys import FORMAT_KEYS
 
 
 def get_key(tag, key, format):
@@ -150,7 +145,7 @@ def extract_ogg_tag(path):
 
 	return (ogg_tag, error)
 
-def get_song_data(path):
+def get_song_data(path, Config):
 	
 	""" 
 		Extracts song artist, album, title and lyrics if present 
@@ -213,7 +208,8 @@ def get_song_data(path):
 	# those properties of the Song object would be intialized to None
 	if artist and title:
 		lyrics_file_name = '%s - %s.txt' % (artist, title)
-		lyrics_file_path = os.path.join(Config.lyrics_dir, lyrics_file_name)
+		lyrics_file_path = os.path.expanduser(os.path.join(Config['paths']['lyrics_dir'], lyrics_file_name))
+		print(lyrics_file_path)
 	else:
 		# Only log the following error if the tags have been read correctly but
 		# artist or title was simply not present in the tag.
@@ -223,7 +219,7 @@ def get_song_data(path):
 
 
 	# check if lyrics file already exists in LYRICS_DIR
-	if lyrics_file_path in Config.lyric_files_in_dir:
+	if os.path.isfile(lyrics_file_path):
 		lyrics_file_present = True
 
 	# check if lyrics already embedded in tag
@@ -247,7 +243,7 @@ def get_song_data(path):
 
 	return data
 
-def get_song_list(path):
+def get_song_list(path,Config):
 
 	""" Return list of paths to all valid audio files in dir located at path.
 		Valid audio formats are imported from settings module.
@@ -255,7 +251,7 @@ def get_song_list(path):
 
 	song_list = []
 
-	for ext in Config.audio_formats:
+	for ext in Config['filetype']['filetypes'].splitlines():
 		pattern = '**/*.' + ext
 		pattern_uppercase = '**/*.' + ext.upper()
 

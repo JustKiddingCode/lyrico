@@ -4,8 +4,8 @@
 	mutagen's tag objects for the supported audio formats.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 
 VORBIS_COMMENTS_KEYS = {

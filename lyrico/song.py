@@ -1,8 +1,8 @@
 
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 
 import time
@@ -15,15 +15,14 @@ from mutagen import MutagenError
 from bs4 import BeautifulSoup
 
 # Import all the sources modules
-from .lyrico_sources.lyric_wikia import donwload_from_lyric_wikia
-from .lyrico_sources.lyrics_n_music import donwload_from_lnm
-from .lyrico_sources.az_lyrics import donwload_from_az_lyrics
-from .lyrico_sources.musix_match import donwload_from_musix_match
-from .lyrico_sources.lyricsmode import donwload_from_lyricsmode
+from lyrico_sources.lyric_wikia import donwload_from_lyric_wikia
+from lyrico_sources.lyrics_n_music import donwload_from_lnm
+from lyrico_sources.az_lyrics import donwload_from_az_lyrics
+from lyrico_sources.musix_match import donwload_from_musix_match
+from lyrico_sources.lyricsmode import donwload_from_lyricsmode
 
-from .song_helper import get_song_data, get_song_list
-from .config import Config
-from .audio_format_keys import FORMAT_KEYS
+from song_helper import get_song_data, get_song_list
+from audio_format_keys import FORMAT_KEYS
 
 # If we are using python27, import codec module and replace native 'open'
 # with 'codec.open' to write unicode strings to file.
@@ -45,12 +44,12 @@ class Song():
 	# Count for songs whose lyrics are successfully saved to tag.
 	lyrics_saved_to_tag_count = 0
 
-	def __init__(self, path):
+	def __init__(self, path, Config):
 
 		self.path = path
 
 		# extract data from song
-		data = get_song_data(path)
+		data = get_song_data(path, Config)
 
 		# Initialize instance variables from data extracted
 		self.tag = data['tag']
@@ -83,7 +82,7 @@ class Song():
 		if self.title and self.artist:
 			Song.valid_metadata_count += 1
 
-	def download_lyrics(self):
+	def download_lyrics(self,Config):
 
 		"""
 			Only called when song has artist and title.
@@ -91,7 +90,7 @@ class Song():
 
 		"""
 
-		if not self.download_required():
+		if not self.download_required(Config):
 			print('\nSkipping', self.artist, '-', self.title)
 			print('Lyrics already present.')
 			return
@@ -100,26 +99,51 @@ class Song():
 		print('\nDownloading:', self.artist, '-', self.title)
 
 		# Use sources according to user settings
-		if Config.lyric_wikia:
+		if Config['sources']['lyric_wikia']:
 			donwload_from_lyric_wikia(self)
 
 		# Only try other sources if required
 
-		if not self.lyrics and Config.lyrics_n_music:
+		if not self.lyrics and Config['sources']['lyrics_n_music']:
 			donwload_from_lnm(self)
 
-		if not self.lyrics and Config.musix_match:
+		if not self.lyrics and Config['sources']['musix_match']:
 			donwload_from_musix_match(self)
 
-		if not self.lyrics and Config.lyricsmode:
+		if not self.lyrics and Config['sources']['lyricsmode']:
 			donwload_from_lyricsmode(self)
 
-		if not self.lyrics and Config.az_lyrics:
+		if not self.lyrics and Config['sources']['az_lyrics']:
 			donwload_from_az_lyrics(self)
 
-		self.save_lyrics()
+		if not self.lyrics and self.stripable():
+			#strip [] and () from title and try again
+			self.strip_tags()
+			self.download_lyrics(Config)
 
-	def save_lyrics(self):
+		self.save_lyrics(Config)
+
+	def strip_tags(self):
+		left = self.title.rfind("(")
+		right = self.title.rfind(")")
+		if left > -1 and right > -1:
+			if right < len(self.title):
+				self.title = self.title[:left -1] + self.title[right+1:]
+			else:
+				self.title = self.title[:left -1]
+
+		left = self.title.rfind("[")
+		right = self.title.rfind("]")
+		if left > -1 and right -1:
+			if right < len(self.title):
+				self.title = self.title[:left -1] + self.title[right+1:]
+			else:
+				self.title = self.title[:left -1]
+
+	def stripable(self):
+		return ("(" in self.title or "[" in self.title)
+
+	def save_lyrics(self, Config):
 
 		"""
 			Called by self.download_lyrics to save lyrics according to
@@ -134,8 +158,9 @@ class Song():
 			print('Failed:', self.error)
 			return
 
-		if self.lyrics and Config.save_to_file:
+		if self.lyrics and Config['actions']['save_to_file']:
 			try:
+				print(self.lyrics_file_path)
 				with open(self.lyrics_file_path, 'w', encoding='utf-8') as f:
 					f.write('Artist - ' + self.artist + '\n')
 					f.write('Title - ' + self.title + '\n')
@@ -168,12 +193,12 @@ class Song():
 				self.error = err_str
 				print('Failed:', err_str)
 
-		if self.lyrics and Config.save_to_tag:
+		if self.lyrics and Config['actions']['save_to_tag']:
 			lyrics_key = FORMAT_KEYS[self.format]['lyrics']
 			try:
 				if self.format == 'mp3':
 					# encoding = 3 for UTF-8
-					self.tag.add(USLT(encoding=3, lang = u'eng', desc = u'lyrics.wikia',
+					self.tag.add(USLT(encoding=3, lang = 'eng', desc = 'lyrics.wikia',
 									text=self.lyrics))
 
 				if self.format == 'm4a' or self.format == 'mp4':
@@ -209,7 +234,7 @@ class Song():
 				self.error = err_str
 				print('Failed:', err_str)
 
-	def download_required(self):
+	def download_required(self, Config):
 		"""
 		Checks if a lyrics are required to be download.
 		Uses Config.save_to_file, Config.save_to_tag and Config.overwrite settings
@@ -228,13 +253,13 @@ class Song():
 			# Do we need to download lyrics and save to tag
 			tag_required = False
 
-			if Config.save_to_file and not self.lyrics_file_present:
+			if Config['actions']['save_to_file'] and not self.lyrics_file_present:
 				# if user wants to save to file and the file is not
 				# present in the set LYRICS_DIR, the we need
 				# to download it and save to the file.
 				file_required = True
 
-			if Config.save_to_tag and not self.lyrics_tag_present:
+			if Config['actions']['save_to_tag'] and not self.lyrics_tag_present:
 				# if user wants to save to tag and the tag does not
 				# has lyrics field saved, then we need
 				# to download it and save to the tag.
@@ -244,7 +269,7 @@ class Song():
 			# Data is then saved accordingly to the settings.
 			return file_required or tag_required
 
-	def get_log_string(self):
+	def get_log_string(self, Config):
 		"""
 		returns the log string of the song which is used in final log.
 
@@ -258,8 +283,8 @@ class Song():
 			# 'Ignored' - Ignored according to Config.save_to_file, Config.save_to_tag setting by user.
 			# 'Present' - Detected tag or file and skipped download skipped by lyrico as per Config.overwrite setting.
 
-		if Config.save_to_file:
-			if not self.download_required():
+		if Config['actions']['save_to_file']:
+			if not self.download_required(Config):
 				file_status = 'Present'
 			else:
 				if self.saved_to_file:
@@ -269,8 +294,8 @@ class Song():
 		else:
 			file_status = 'Ignored'
 
-		if Config.save_to_tag:
-			if not self.download_required():
+		if Config['actions']['save_to_tag']:
+			if not self.download_required(Config):
 				tag = 'Present'
 			else:
 				if self.saved_to_tag:
@@ -295,12 +320,12 @@ class Song():
 		return template.format(**log)
 
 	@staticmethod
-	def log_results(song_list):
+	def log_results(song_list, Config):
 
 		try:
 			log_date = time.strftime("%H:%M:%S  %d/%m/%y")
 			log_file_name = 'log.txt'
-			with open(os.path.join(Config.lyrics_dir, log_file_name), 'w', encoding='utf-8') as f:
+			with open(os.path.expanduser(os.path.join(Config['paths']['lyrics_dir'], log_file_name)), 'w', encoding='utf-8') as f:
 				
 				f.write('\t\t\t\tlyrico\n\n')
 
@@ -329,7 +354,7 @@ class Song():
 				index_number = 1
 				for song in song_list:
 					f.write(str(index_number))
-					f.write(song.get_log_string())
+					f.write(song.get_log_string(Config))
 					index_number += 1
 
 				# Add STATUS KEY to log

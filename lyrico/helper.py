@@ -4,8 +4,8 @@
 	Contains general helper functions and Error classes.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 import sys
 import re

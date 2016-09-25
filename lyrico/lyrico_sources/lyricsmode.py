@@ -13,8 +13,8 @@
 	Uses correction mapping for known exception to artist names.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 import re
 import string

@@ -11,8 +11,8 @@
 	exceptions but the server seems to be a bit flexible with URLs.
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
+
+
 
 import re
 import sys
@@ -22,7 +22,7 @@ try:
 	from urllib.parse  import quote
 except ImportError:
 	# Python27
-	from urllib import quote
+	from urllib.parse import quote
 
 from requests import ConnectionError, HTTPError, Timeout
 from bs4 import BeautifulSoup
