@@ -219,7 +219,7 @@ def get_song_data(path, Config):
 
 
 	# check if lyrics file already exists in LYRICS_DIR
-	if os.path.isfile(lyrics_file_path):
+	if lyrics_file_path is not None and os.path.isfile(lyrics_file_path):
 		lyrics_file_present = True
 
 	# check if lyrics already embedded in tag
