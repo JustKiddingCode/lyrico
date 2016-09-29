@@ -1,2 +1,0 @@
-import lyrico
-lyrico.main()
