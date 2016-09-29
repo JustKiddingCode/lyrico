@@ -1,38 +1,4 @@
-# -*- coding: utf-8 -*-
-
-"""
-	Contains general helper functions and Error classes.
-"""
-
-
-
-
-import sys
-import re
-import os
-
-
-class BadConfigError(Exception):
-	def __init__(self, errno, value):
-		self.value = value
-		self.errno = errno
-	
-	def __str__(self):
-		return repr(self.value)
-
-
-def get_config_path():
-	
-	"""
-		Gets the absolute path of dir containing script running the function.
-		Uses that to get the path of config file, since it is located in same dir.
-		Checks if file exists and raises BadConfigError if missings.
-	"""
-	config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.ini')
-	if os.path.isfile(config_path):
-		return config_path
-	else:
-		raise BadConfigError(0, 'Bad Config')
+#!/usr/bin/env python3
 
 def sanitize_data(s):
 	"""Removes excess white-space from strings"""
