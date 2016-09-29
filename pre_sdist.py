@@ -4,26 +4,14 @@
 	This script is called only before running sdist commang on setup.py
 	Only import Python's native modules here.
 """
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
+from configparser import ConfigParser
 import os
 
 
 def reset_config():
 	
-	# Import ConfigParser
-	try:
-		# >3.2
-		from configparser import ConfigParser
-	except ImportError:
-		# python27
-		# Refer to the older SafeConfigParser as ConfigParser
-		from ConfigParser import SafeConfigParser as ConfigParser
-
 	# Get path to config file
-	config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lyrico/config.ini')
+	config_path = os.path.expanduser('~/.lyricorc')
 
 	# Load config.ini
 	config = ConfigParser()
@@ -34,7 +22,6 @@ def reset_config():
 	config.set('actions', 'save_to_tag', 'False')
 	config.set('actions', 'overwrite', 'False')
 
-	config.set('paths', 'source_dir', 'None')
 	config.set('paths', 'lyrics_dir', 'None')
 
 	config.set('sources', 'lyric_wikia', 'True')
