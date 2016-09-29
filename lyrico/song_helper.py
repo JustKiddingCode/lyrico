@@ -9,7 +9,6 @@
 
 import sys
 import os
-import glob2
 import platform
 
 from urllib.parse  import quote
@@ -252,16 +251,6 @@ def get_song_list(path,Config):
 	song_list = []
 
 	for ext in Config['filetype']['filetypes'].splitlines():
-		pattern = '**/*.' + ext
-		pattern_uppercase = '**/*.' + ext.upper()
-
-		song_list.extend(glob2.glob(os.path.join(path, pattern)))
-
-		# Windows is case-insensitive towards extensions. So the glob2 module detects
-		# ex. .ogg and .OGG as well. But in Linux the extensions are case-sensitive.
-
-		# Add detection for uppercase extensions
-		if platform.system() == 'Linux':
-			song_list.extend(glob2.glob(os.path.join(path, pattern_uppercase)))
+		song_list.extend([f for f in os.listdir(path) if f.lower().endswith(ext)])
 
 	return song_list

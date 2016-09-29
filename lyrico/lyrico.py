@@ -17,7 +17,7 @@ Config = configparser.ConfigParser()
 Config.read(os.path.expanduser('~/.lyricorc'))
 parser = argparse.ArgumentParser()
 parser.add_argument("directory", help="directory where lyrico will search for mp3 files")
-parser.add_argument("--overwrite", help="always download and overwrite existing lyrics")
+parser.add_argument("--overwrite", help="always download and overwrite existing lyrics", action='store_true')
 args = parser.parse_args()
 
 

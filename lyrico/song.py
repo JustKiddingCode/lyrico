@@ -1,10 +1,4 @@
-
-# -*- coding: utf-8 -*-
-
-
-
-
-
+#!/usr/bin/env python3
 import time
 import sys
 import os
@@ -23,14 +17,6 @@ from lyrico_sources.lyricsmode import donwload_from_lyricsmode
 
 from song_helper import get_song_data, get_song_list
 from audio_format_keys import FORMAT_KEYS
-
-# If we are using python27, import codec module and replace native 'open'
-# with 'codec.open' to write unicode strings to file.
-
-if sys.version_info[0] < 3:
-    import codecs
-    open = codecs.open
-
 
 class Song():
 	"""Container objects repersenting each song globbed from source_dir"""
@@ -198,7 +184,7 @@ class Song():
 			try:
 				if self.format == 'mp3':
 					# encoding = 3 for UTF-8
-					self.tag.add(USLT(encoding=3, lang = 'eng', desc = 'lyrics.wikia',
+					self.tag.add(USLT(encoding=1, lang = 'eng', desc = 'lyrics.wikia',
 									text=self.lyrics))
 
 				if self.format == 'm4a' or self.format == 'mp4':
@@ -321,95 +307,4 @@ class Song():
 
 	@staticmethod
 	def log_results(song_list, Config):
-
-		try:
-			log_date = time.strftime("%H:%M:%S  %d/%m/%y")
-			log_file_name = 'log.txt'
-			with open(os.path.expanduser(os.path.join(Config['paths']['lyrics_dir'], log_file_name)), 'w', encoding='utf-8') as f:
-				
-				f.write('\t\t\t\tlyrico\n\n')
-
-				f.write('Log Date ' + log_date + '\n')
-				f.write('\n')
-
-				f.write('Audio files detected: ' + str(len(song_list)))
-				f.write('\n')
-
-				f.write('Metadata extracted for: ' + str(Song.valid_metadata_count))
-				f.write('\n')
-
-				f.write('Lyrics files saved: ' + str(Song.lyrics_saved_to_file_count))
-				f.write('\n')
-
-				f.write('Tags saved: ' + str(Song.lyrics_saved_to_tag_count))
-				f.write('\n\n')
-
-				table_header = '  \t[FILE]\t[TAG]\t[SOURCE]\t\t\t[ARTIST-TITLE]\t\t\t\t[ERROR]\n'
-				table_border = '='*100 + '\n'
-
-				f.write(table_header)
-				f.write(table_border)
-
-				# write individual song log strings
-				index_number = 1
-				for song in song_list:
-					f.write(str(index_number))
-					f.write(song.get_log_string(Config))
-					index_number += 1
-
-				# Add STATUS KEY to log
-				f.write('\n\n\t**** STATUS KEY ****\n')
-
-				f.write("\t# 'Saved' - File or tag was saved successfully.")
-				f.write("\n")
-
-				f.write("\t# 'Failed' - Download or save failed. See error.")
-				f.write("\n")
-
-				f.write("\t# 'Ignored' - Ignored according to 'save_to_file', 'save_to_tag' setting.")
-				f.write("\n")
-
-				f.write("\t# 'Present' - Detected tag or file and skipped download as per 'overwrite' setting.")
-				f.write("\n")
-
-				# Add source key to log
-				f.write('\n\n\t**** SOURCE KEY  ****\n')
-
-				f.write("\t# 'WIKI' - Lyric Wikia")
-				f.write("\n")
-
-				f.write("\t# 'LnM' - LYRICSnMUSIC")
-				f.write("\n")
-
-				f.write("\t# 'mXm' - musiXmatch")
-				f.write("\n")
-
-				f.write("\t# 'LrMOD' - LYRICSMODE")
-				f.write("\n")
-
-				f.write("\t# 'AZLr' - AZLyrics")
-				f.write("\n\n")
-
-				# Add credits
-				f.write(table_border)
-				
-				f.write("'lyrico' has been built and is maintained by Abhimanyu Pathania.")
-				f.write("\n\n")
-
-				f.write('If you encounter a bug, please raise an issue on GitHub.')
-				f.write("\n")
-
-				f.write('\thttps://github.com/abhimanyuPathania/lyrico/issues')
-				f.write("\n")
-
-				f.write('Or you can mail me: abpindia1944@gmail.com')
-				f.write("\n\n")
-
-				f.write('Cheers!')
-				f.write('\n\n\n\n')
-
-		except IOError as e:
-			print('Unable to build log.')
-			print('"lyrics_dir" does not exist. Please set "lyric_dir" to a folder which exists.')
-
-
+		pass
